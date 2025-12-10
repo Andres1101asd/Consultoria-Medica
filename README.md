@@ -66,6 +66,7 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver el 
 - `/` - Página principal
 - `/login` - Página de inicio de sesión
 - `/signup` - Página de registro
+- `/dashboard` - Dashboard del consultorio médico (requiere autenticación)
 
 ## Scripts Disponibles
 
@@ -96,6 +97,37 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver el 
 - ✅ Autenticación con Supabase
 - ✅ Registro de usuarios
 - ✅ Inicio de sesión
+- ✅ Dashboard para consultorio médico
+- ✅ Gestión de pacientes y citas
 - ✅ Validación de formularios
 - ✅ Diseño responsive
 - ✅ Manejo de errores
+
+## Despliegue a Producción
+
+Para desplegar la aplicación a producción, consulta el archivo [DEPLOY.md](./DEPLOY.md) que incluye instrucciones detalladas para:
+
+- **Vercel** (Recomendado - más fácil)
+- **Servidor propio** con Node.js
+- **Docker**
+
+### Build para Producción
+
+```bash
+# Construir la aplicación
+npm run build
+
+# Probar localmente en modo producción
+npm start
+```
+
+### Variables de Entorno en Producción
+
+Asegúrate de configurar estas variables en tu plataforma de hosting:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
+# O
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=tu-publishable-key
+```
