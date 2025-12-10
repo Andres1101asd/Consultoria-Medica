@@ -21,18 +21,49 @@ export default function DashboardPage() {
   const checkUser = async () => {
     try {
       const supabase = createSupabaseClient()
-      const { data: { user }, error } = await supabase.auth.getUser()
+      
+      // Primero verificar la sesión actual
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      console.log('🔍 Verificando sesión en dashboard:', {
+        hasSession: !!session,
+        sessionError: sessionError?.message,
+        userId: session?.user?.id
+      })
 
-      if (error || !user) {
-        router.push('/login')
+      if (sessionError) {
+        console.error('❌ Error al obtener sesión:', sessionError)
+        router.push('/login?error=session_expired')
         return
       }
 
+      if (!session) {
+        console.warn('⚠️ No hay sesión activa')
+        router.push('/login?error=no_session')
+        return
+      }
+
+      // Verificar el usuario
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+      if (userError) {
+        console.error('❌ Error al obtener usuario:', userError)
+        router.push('/login?error=user_error')
+        return
+      }
+
+      if (!user) {
+        console.warn('⚠️ No se encontró usuario')
+        router.push('/login?error=no_user')
+        return
+      }
+
+      console.log('✅ Usuario autenticado:', user.email)
       setUser(user)
       loadDashboardData()
-    } catch (err) {
-      console.error('Error al verificar usuario:', err)
-      router.push('/login')
+    } catch (err: any) {
+      console.error('❌ Error al verificar usuario:', err)
+      router.push('/login?error=unknown')
     } finally {
       setLoading(false)
     }

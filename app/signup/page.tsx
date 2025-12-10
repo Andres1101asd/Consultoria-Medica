@@ -115,11 +115,21 @@ export default function SignupPage() {
       }
 
       if (data.user) {
-        setSuccess(true)
-        // Redirigir al login después de 2 segundos
-        setTimeout(() => {
-          router.push('/login?message=Cuenta creada exitosamente. Por favor, verifica tu email.')
-        }, 2000)
+        // Verificar si el email necesita confirmación
+        const needsEmailConfirmation = !data.user.email_confirmed_at
+        
+        if (needsEmailConfirmation) {
+          setSuccess(true)
+          setTimeout(() => {
+            router.push('/login?message=Cuenta creada exitosamente. Por favor, verifica tu email antes de iniciar sesión.')
+          }, 2000)
+        } else {
+          // Si el email ya está confirmado (verificación desactivada), redirigir directamente al dashboard
+          setSuccess(true)
+          setTimeout(() => {
+            router.push('/dashboard')
+          }, 1000)
+        }
       }
     } catch (err: any) {
       let errorMessage = 'Error inesperado al crear la cuenta'

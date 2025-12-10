@@ -20,8 +20,31 @@ export default function LoginPage() {
 
   useEffect(() => {
     const message = searchParams.get('message')
+    const error = searchParams.get('error')
+    
     if (message) {
       setSuccess(message)
+    }
+    
+    if (error) {
+      let errorMsg = ''
+      switch (error) {
+        case 'session_expired':
+          errorMsg = 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.'
+          break
+        case 'no_session':
+          errorMsg = 'No hay una sesión activa. Por favor, inicia sesión.'
+          break
+        case 'user_error':
+          errorMsg = 'Error al verificar tu usuario. Por favor, intenta nuevamente.'
+          break
+        case 'no_user':
+          errorMsg = 'No se encontró tu usuario. Por favor, inicia sesión nuevamente.'
+          break
+        default:
+          errorMsg = 'Hubo un error. Por favor, intenta iniciar sesión nuevamente.'
+      }
+      setError(errorMsg)
     }
   }, [searchParams])
 
@@ -79,21 +102,36 @@ export default function LoginPage() {
 
       const supabase = createSupabaseClient()
 
+      console.log('🔐 Intentando iniciar sesión con:', formData.email)
+
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       })
 
+      // Debug: mostrar respuesta completa
+      console.log('📥 Respuesta de Supabase:', { 
+        user: data?.user ? 'Usuario encontrado' : 'No hay usuario',
+        error: signInError ? signInError.message : 'Sin errores',
+        session: data?.session ? 'Sesión creada' : 'No hay sesión'
+      })
+
       if (signInError) {
-        // Mensajes de error más amigables
+        // Mensajes de error más amigables y detallados
         let errorMessage = signInError.message || 'Error al iniciar sesión'
         
-        if (errorMessage.includes('fetch')) {
-          errorMessage = 'Error de conexión. Verifica que las credenciales de Supabase sean correctas.'
-        } else if (errorMessage.includes('Invalid login credentials')) {
-          errorMessage = 'Email o contraseña incorrectos.'
-        } else if (errorMessage.includes('Email not confirmed')) {
-          errorMessage = 'Por favor, verifica tu email antes de iniciar sesión.'
+        console.error('❌ Error de autenticación:', signInError)
+        
+        if (errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
+          errorMessage = 'Error de conexión. Verifica que las credenciales de Supabase sean correctas y que tu conexión a internet funcione.'
+        } else if (errorMessage.includes('Invalid login credentials') || errorMessage.includes('Invalid credentials')) {
+          errorMessage = 'Email o contraseña incorrectos. Verifica tus credenciales e intenta nuevamente.'
+        } else if (errorMessage.includes('Email not confirmed') || errorMessage.includes('email_not_confirmed')) {
+          errorMessage = 'Por favor, verifica tu email antes de iniciar sesión. Revisa tu bandeja de entrada.\n\n💡 Si no recibiste el email, puedes desactivar la verificación de email en Supabase (Authentication > Settings > Enable email confirmations) para desarrollo.'
+        } else if (errorMessage.includes('User not found')) {
+          errorMessage = 'No existe una cuenta con este email. ¿Quieres registrarte?'
+        } else if (errorMessage.includes('Too many requests')) {
+          errorMessage = 'Demasiados intentos. Por favor, espera unos minutos antes de intentar nuevamente.'
         }
         
         setError(errorMessage)
@@ -101,13 +139,29 @@ export default function LoginPage() {
         return
       }
 
-      if (data.user) {
-        setSuccess('¡Inicio de sesión exitoso!')
-        // Redirigir al dashboard después del login
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 1000)
+      // Verificar que tenemos usuario y sesión
+      if (!data.user) {
+        console.error('❌ No se recibió usuario en la respuesta')
+        setError('Error al iniciar sesión. No se pudo obtener la información del usuario.')
+        setLoading(false)
+        return
       }
+
+      if (!data.session) {
+        console.error('❌ No se creó una sesión')
+        setError('Error al crear la sesión. Por favor, intenta nuevamente.')
+        setLoading(false)
+        return
+      }
+
+      console.log('✅ Login exitoso, usuario:', data.user.email)
+      setSuccess('¡Inicio de sesión exitoso!')
+      
+      // Redirigir al dashboard después del login
+      setTimeout(() => {
+        router.push('/dashboard')
+        router.refresh() // Forzar actualización de la página
+      }, 1000)
     } catch (err: any) {
       let errorMessage = 'Error inesperado al iniciar sesión'
       
